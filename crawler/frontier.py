@@ -5,12 +5,12 @@ import time
 from threading import Thread, RLock
 from queue import Queue, Empty
 
+from utils import get_logger, get_urlhash, normalize
+from scraper import is_valid
+
 #adding extra libs
 from collections import defaultdict
 from urllib.parse import urlparse, urldefrag
-
-from utils import get_logger, get_urlhash, normalize
-from scraper import is_valid
 
 class Frontier(object):
     def __init__(self, config, restart):
@@ -107,6 +107,42 @@ class Frontier(object):
 
             self.save[urlhash] = (url, True)
             self.save.sync()
+
+    # checking if the url is following the instruction of
+    #*.ics.uci.edu/*
+    #*.cs.uci.edu/*
+    #*.informatics.uci.edu/*
+    #*.stat.uci.edu/*
+    #today.uci.edu/department/information_computer_sciences/*
+    def check_subdomain(self, url):
+        try:
+            parsed_url = urlparse(url)
+            hostname = parsed_url.hostname
+            path = parsed_url.path
+
+            if hostname is None:
+                return False
+
+            assigned_domains = (
+                ".ics.uci.edu",
+                ".cs.uci.edu",
+                ".informatics.uci.edu",
+                ".stat.uci.edu"
+            )
+
+            if any(hostname.endswith(domain) for domain in assigned_domains):
+                return True
+
+            if hostname == ("today.uci.edu") and path.startswith("/department/information_computer_sciences"):
+                return True
+
+            return False
+
+        except Exception as e:
+            self.logger.error(f"Error on {url}: {e}")
+            return False
+
+
 
 
     # 1.How many unique pages did you find?
