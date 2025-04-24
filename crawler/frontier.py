@@ -90,10 +90,14 @@ class Frontier(object):
             if urlhash not in self.save:
                 self.save[urlhash] = (unfrag_url, False)
                 self.save.sync()
+
                 self.to_be_downloaded.append(unfrag_url)
 
                 #building up the unique URLs set
                 self.unique_urls.add(unfrag_url)
+                #checking if the url is missing and also is allowed to be crawled
+                if self.check_subdomain(unfrag_url):
+                    self.subdomains[unfrag_url.hostname].add(unfrag_url)
 
     def mark_url_complete(self, url):
 
@@ -107,6 +111,8 @@ class Frontier(object):
 
             self.save[urlhash] = (url, True)
             self.save.sync()
+
+
 
     # checking if the url is following the instruction of
     #*.ics.uci.edu/*
