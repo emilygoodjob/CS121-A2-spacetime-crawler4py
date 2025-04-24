@@ -1,8 +1,13 @@
 import os
 import shelve
+import time
 
 from threading import Thread, RLock
 from queue import Queue, Empty
+
+#adding extra libs
+from collections import defaultdict
+from urllib.parse import urlparse, urldefrag
 
 from utils import get_logger, get_urlhash, normalize
 from scraper import is_valid
@@ -11,7 +16,13 @@ class Frontier(object):
     def __init__(self, config, restart):
         self.logger = get_logger("FRONTIER")
         self.config = config
-        self.to_be_downloaded = list()
+        self.to_be_downloaded = []
+
+        ## adding more needed attributes
+        self.Lock = RLock()
+        self.domain_last_access = {}
+        self.subdomains = defaultdict(set)
+        self.unique_urls = set()
         
         if not os.path.exists(self.config.save_file) and not restart:
             # Save file does not exist, but request to load save.
@@ -35,6 +46,9 @@ class Frontier(object):
                 for url in self.config.seed_urls:
                     self.add_url(url)
 
+
+
+
     def _parse_save_file(self):
         ''' This function can be overridden for alternate saving techniques. '''
         total_count = len(self.save)
@@ -42,31 +56,71 @@ class Frontier(object):
         for url, completed in self.save.values():
             if not completed and is_valid(url):
                 self.to_be_downloaded.append(url)
+
+                #building the unique urls set
+                self.unique_urls.add(url)
+
                 tbd_count += 1
         self.logger.info(
             f"Found {tbd_count} urls to be downloaded from {total_count} "
             f"total urls discovered.")
 
     def get_tbd_url(self):
-        try:
-            return self.to_be_downloaded.pop()
-        except IndexError:
+
+        # make sure only one thread at a time for the thread-safe purpose
+        with self.Lock:
+            now = time.time()
+            for i, url in enumerate(self.to_be_downloaded):
+                domain = urlparse(url).netloc
+                last_access = self.domain_last_access.get(domain, 0)
+                if now - last_access >= self.config.time_delay:
+                    self.domain_last_access[domain] = now
+                    return self.to_be_downloaded.pop(i)
             return None
 
     def add_url(self, url):
-        url = normalize(url)
-        urlhash = get_urlhash(url)
-        if urlhash not in self.save:
-            self.save[urlhash] = (url, False)
-            self.save.sync()
-            self.to_be_downloaded.append(url)
-    
-    def mark_url_complete(self, url):
-        urlhash = get_urlhash(url)
-        if urlhash not in self.save:
-            # This should not happen.
-            self.logger.error(
-                f"Completed url {url}, but have not seen it before.")
 
-        self.save[urlhash] = (url, True)
-        self.save.sync()
+        #make sure only one thread at a time for the thread-safe purpose
+        with self.Lock:
+            url = normalize(url)
+            #get rid of the fragment and starting here using fragment_clean version urls
+            unfrag_url, _ = urldefrag(url)
+
+            urlhash = get_urlhash(unfrag_url)
+            if urlhash not in self.save:
+                self.save[urlhash] = (unfrag_url, False)
+                self.save.sync()
+                self.to_be_downloaded.append(unfrag_url)
+
+                #building up the unique URLs set
+                self.unique_urls.add(unfrag_url)
+
+    def mark_url_complete(self, url):
+
+        # make sure only one thread at a time for the thread-safe purpose
+        with self.Lock:
+            urlhash = get_urlhash(url)
+            if urlhash not in self.save:
+                # This should not happen.
+                self.logger.error(
+                    f"Completed url {url}, but have not seen it before.")
+
+            self.save[urlhash] = (url, True)
+            self.save.sync()
+
+
+    # 1.How many unique pages did you find?
+    #Uniqueness for the purposes of this assignment is ONLY established by the URL,
+    # but discarding the fragment part.
+    def print_unique_urls(self):
+        print(f"There are total of {len(self.unique_urls)} unique pages")
+
+
+
+    # 4. How many subdomains did you find in the uci.edu domain?
+    def print_subdomains(self):
+        print("The following are the subdomains:")
+        for subdomain in sorted(self.subdomains):
+            print(f"{subdomain}", len(self.subdomains[subdomain]))
+
+
