@@ -126,6 +126,7 @@ class Frontier(object):
             hostname = parsed_url.hostname
             path = parsed_url.path
 
+
             if hostname is None:
                 return False
 
