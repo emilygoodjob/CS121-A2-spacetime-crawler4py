@@ -71,9 +71,10 @@ class Frontier(object):
         with self.Lock:
             now = time.time()
             for i, url in enumerate(self.to_be_downloaded):
+                # print(f"Trying URL: {url}") 
                 domain = urlparse(url).netloc
                 last_access = self.domain_last_access.get(domain, 0)
-                crawl_delay = self.config.get_crawl_delay(domain)
+                crawl_delay = self.config.time_delay
 
                 # Respect the crawl delay
                 if now - last_access >= crawl_delay:
@@ -90,6 +91,7 @@ class Frontier(object):
             unfrag_url, _ = urldefrag(url)
 
             urlhash = get_urlhash(unfrag_url)
+            # print(f"Adding URL to frontier: {unfrag_url}") 
             if urlhash not in self.save:
                 self.save[urlhash] = (unfrag_url, False)
                 self.save.sync()
@@ -98,9 +100,11 @@ class Frontier(object):
 
                 #building up the unique URLs set
                 self.unique_urls.add(unfrag_url)
+                parsed_unfrag = urlparse(unfrag_url)
+                hostname = parsed_unfrag.hostname
                 #checking if the url is missing and also is allowed to be crawled
-                if self.check_subdomain(unfrag_url):
-                    self.subdomains[unfrag_url.hostname].add(unfrag_url)
+                if hostname and self.check_subdomain(unfrag_url):
+                    self.subdomains[hostname].add(unfrag_url)
 
     def mark_url_complete(self, url):
 

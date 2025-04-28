@@ -7,7 +7,8 @@ from utils import get_logger
 import scraper
 import time
 import threading
-from robotexclusionrulesparser import RobotFileParser
+# from robotexclusionrulesparser import RobotFileParser
+from urllib.robotparser import RobotFileParser
 
 
 class Worker(Thread):
@@ -33,7 +34,10 @@ class Worker(Thread):
             return self.config.time_delay
         
         # Get Crawl-Delay
-        crawl_delay = rp.get_crawl_delay("*")
+        # crawl_delay = rp.get_crawl_delay("*")
+        crawl_delay = rp.crawl_delay("*")
+        if callable(crawl_delay):
+            crawl_delay = crawl_delay("*")
         if crawl_delay is None:
             return self.config.time_delay
         return crawl_delay
@@ -52,7 +56,9 @@ class Worker(Thread):
             self.logger.info(f"Fetching robots.txt from {robots_url}")
             rp = RobotFileParser()
             try:
-                rp.fetch(robots_url)
+                # rp.fetch(robots_url)
+                rp.set_url(robots_url)
+                rp.read()
                 self.robot_parsers[domain] = rp
             except Exception as e:
                 self.logger.warning(f"Failed to fetch robots.txt from {robots_url}: {e}")
@@ -63,10 +69,12 @@ class Worker(Thread):
             return True
         
         # To check if the URL can be fetched
-        return rp.is_allowed("*", url)
+        # return rp.is_allowed("*", url)
+        return rp.can_fetch("*", url)
 
         
     def run(self):
+        # self.logger.info("Worker started") 
         retry_delay = 5  # todo: make this configurable
         max_file_size = 10 * 1024 * 1024  # 10 MB, todo: make this configurable
         min_file_size = 100  # todo: make this configurable
@@ -81,7 +89,7 @@ class Worker(Thread):
                 tbd_url = self.frontier.get_tbd_url()
                 if not tbd_url:
                     # if still empty, stop the crawler
-                    self.frontier.stop()
+                    # self.frontier.stop()
                     self.frontier.save()
                     self.logger.info("Frontier is empty. Stopping Crawler.")
                     break
@@ -105,6 +113,11 @@ class Worker(Thread):
             # Check if the response is valid
             if resp is None:
                 self.logger.warning(f"Failed to download {tbd_url}. Skipping.")
+                self.frontier.mark_url_complete(tbd_url)
+                continue
+            # Check if response.raw_response is valid
+            if resp.raw_response is None:
+                self.logger.warning(f"Raw response is None for {tbd_url}. Skipping.")
                 self.frontier.mark_url_complete(tbd_url)
                 continue
 
@@ -172,3 +185,7 @@ def start_workers(config, frontier):
         w.join()
     status_thread.join()
     logger.info("All workers finished")
+    
+def queue_size(self):
+    with self.Lock:
+        return len(self.to_be_downloaded)
