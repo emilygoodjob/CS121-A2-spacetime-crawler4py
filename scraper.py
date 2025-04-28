@@ -2,19 +2,32 @@ import re
 import hashlib
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
+from collections import Counter
 
 # Duplicate detection
 seen_hashes = set()
 seen_shingles = dict()
+global_word_counter = Counter()
+max_words_page = ("", 0)
 
 SHINGLE_SIZE = 5
 NEAR_DUPLICATE_THRESHOLD = 0.9
 
 def scraper(url, resp):
+    global global_word_counter
+    global max_words_page
+    
     # handle successful responses
     if resp.status != 200 or not resp.raw_response:
         return []
     text = extract_visible_text(resp)
+    words = [w.lower() for w in re.findall(r'\b\w+\b', text)]
+
+    # add counts
+    global_word_counter.update(words)
+    # check if this page has most words
+    if len(words) > max_words_page[1]:
+        max_words_page = (url, len(words))
     
     # check exact duplicates & near duplicates
     if is_exact_duplicate(text):

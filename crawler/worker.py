@@ -9,11 +9,12 @@ import time
 import threading
 # from robotexclusionrulesparser import RobotFileParser
 from urllib.robotparser import RobotFileParser
+from scraper import max_words_page, global_word_counter
 
 
 class Worker(Thread):
     def __init__(self, worker_id, config, frontier):
-
+        self.worker_id = worker_id
         self.logger = get_logger(f"Worker-{worker_id}", "Worker")
         self.config = config
         self.frontier = frontier
@@ -92,6 +93,19 @@ class Worker(Thread):
                     # self.frontier.stop()
                     self.frontier.save()
                     self.logger.info("Frontier is empty. Stopping Crawler.")
+                    
+                    # print report
+                    if self.worker_id == 0:
+                        print("\n Report")
+                        print(f"Total unique pages found: {len(self.frontier.unique_urls)}")
+                        print("\nSubdomains:")
+                        for subdomain in sorted(self.frontier.subdomains):
+                            print(f"{subdomain}, {len(self.frontier.subdomains[subdomain])}")
+                        print(f"\nPage with most words: {max_words_page[0]} ({max_words_page[1]} words)")
+                        print("\nTop 50 words:")
+                        for word, freq in global_word_counter.most_common(50):
+                            print(f"{word}: {freq}")
+                        
                     break
                 else:
                     continue
