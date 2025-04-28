@@ -73,7 +73,10 @@ class Frontier(object):
             for i, url in enumerate(self.to_be_downloaded):
                 domain = urlparse(url).netloc
                 last_access = self.domain_last_access.get(domain, 0)
-                if now - last_access >= self.config.time_delay:
+                crawl_delay = self.worker.config.get_crawl_delay(domain)
+
+                # Respect the crawl delay
+                if now - last_access >= crawl_delay:
                     self.domain_last_access[domain] = now
                     return self.to_be_downloaded.pop(i)
             return None
@@ -152,7 +155,7 @@ class Frontier(object):
 
 
     # 1.How many unique pages did you find?
-    #Uniqueness for the purposes of this assignment is ONLY established by the URL,
+    # Uniqueness for the purposes of this assignment is ONLY established by the URL,
     # but discarding the fragment part.
     def print_unique_urls(self):
         print(f"There are total of {len(self.unique_urls)} unique pages")
@@ -164,5 +167,4 @@ class Frontier(object):
         print("The following are the subdomains:")
         for subdomain in sorted(self.subdomains):
             print(f"{subdomain}", len(self.subdomains[subdomain]))
-
 
