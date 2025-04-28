@@ -139,11 +139,11 @@ def start_workers(config, frontier):
     """
     Start a worker thread.
     """
-    logger = get_logger(f"Worker-{worker_id}", "Worker")
     workers = []
 
     # start all the worker threads
     for worker_id in range(config.threads_count):
+        logger = get_logger(f"Worker-{worker_id}", "Worker")
         worker = Worker(worker_id, config, frontier)
         workers.append(worker)
         worker.start()

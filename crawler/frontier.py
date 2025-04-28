@@ -73,7 +73,7 @@ class Frontier(object):
             for i, url in enumerate(self.to_be_downloaded):
                 domain = urlparse(url).netloc
                 last_access = self.domain_last_access.get(domain, 0)
-                crawl_delay = self.worker.config.get_crawl_delay(domain)
+                crawl_delay = self.config.get_crawl_delay(domain)
 
                 # Respect the crawl delay
                 if now - last_access >= crawl_delay:
