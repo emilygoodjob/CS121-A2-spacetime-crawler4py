@@ -79,6 +79,7 @@ class Worker(Thread):
         retry_delay = 5  # todo: make this configurable
         max_file_size = 10 * 1024 * 1024  # 10 MB, todo: make this configurable
         min_file_size = 100  # todo: make this configurable
+        pages_crawled = 0
         while True:
             tbd_url = self.frontier.get_tbd_url()
 
@@ -91,7 +92,7 @@ class Worker(Thread):
                 if not tbd_url:
                     # if still empty, stop the crawler
                     # self.frontier.stop()
-                    self.frontier.save()
+                    self.frontier.sync()
                     self.logger.info("Frontier is empty. Stopping Crawler.")
                     
                     # print report
@@ -114,6 +115,7 @@ class Worker(Thread):
             if not self.can_fetch(tbd_url):
                 self.logger.info(f"Skipping {tbd_url} due to robots.txt rules.")
                 self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
                 continue
 
             # get crawl delay for the domain
@@ -128,10 +130,12 @@ class Worker(Thread):
             if resp is None:
                 self.logger.warning(f"Failed to download {tbd_url}. Skipping.")
                 self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
                 continue
             # Check if response.raw_response is valid
             if resp.raw_response is None:
                 self.logger.warning(f"Raw response is None for {tbd_url}. Skipping.")
+                self.frontier.sync()
                 self.frontier.mark_url_complete(tbd_url)
                 continue
 
@@ -146,6 +150,7 @@ class Worker(Thread):
             if len(resp.raw_response.content) < min_file_size:
                 self.logger.info(f"Skipping {tbd_url} because content is too small ({len(resp.raw_response.content)} bytes).")
                 self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
                 continue
 
             self.logger.info(
@@ -156,6 +161,10 @@ class Worker(Thread):
             for scraped_url in scraped_urls:
                 self.frontier.add_url(scraped_url)
             self.frontier.mark_url_complete(tbd_url)
+            pages_crawled += 1
+            if pages_crawled % 10 == 0:
+                self.logger.info("Auto-saving frontier state...")
+                self.frontier.sync()
 
             # sleep for the crawl delay before the next request
             self.logger.info(f"Sleeping for {crawl_delay}s before next request.")

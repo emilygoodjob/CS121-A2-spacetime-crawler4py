@@ -3,12 +3,14 @@ import hashlib
 from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from collections import Counter
+import threading
 
 # Duplicate detection
 seen_hashes = set()
 seen_shingles = dict()
 global_word_counter = Counter()
 max_words_page = ("", 0)
+seen_shingles_lock = threading.Lock()
 
 SHINGLE_SIZE = 5
 NEAR_DUPLICATE_THRESHOLD = 0.9
@@ -129,9 +131,11 @@ def jaccard_similarity(set1, set2):
 
 def is_near_duplicate(url, text):
     new_shingles = get_shingles(text)
-    for other_url, shingles in seen_shingles.items():
-        similarity = jaccard_similarity(new_shingles, shingles)
-        if similarity >= NEAR_DUPLICATE_THRESHOLD:
-            return True, other_url, similarity
-    seen_shingles[url] = new_shingles
+    with seen_shingles_lock:
+        for other_url, shingles in seen_shingles.items():
+            similarity = jaccard_similarity(new_shingles, shingles)
+            if similarity >= NEAR_DUPLICATE_THRESHOLD:
+                return True, other_url, similarity
+        seen_shingles[url] = new_shingles
+
     return False, None, 0.0

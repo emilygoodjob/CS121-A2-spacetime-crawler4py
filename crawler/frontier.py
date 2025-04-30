@@ -172,3 +172,6 @@ class Frontier(object):
         for subdomain in sorted(self.subdomains):
             print(f"{subdomain}", len(self.subdomains[subdomain]))
 
+    def sync(self):
+        with self.Lock:
+            self.save.sync()
