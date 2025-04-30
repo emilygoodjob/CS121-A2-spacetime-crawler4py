@@ -112,3 +112,5 @@ venv.bak/
 # log file
 Log/
 crawl_stats.txt
+
+.idea/
