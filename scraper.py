@@ -4,13 +4,15 @@ from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from collections import Counter
 import threading
-
 # Duplicate detection
 seen_hashes = set()
 seen_shingles = dict()
 global_word_counter = Counter()
 max_words_page = ("", 0)
 seen_shingles_lock = threading.Lock()
+
+with open("stopwords.txt", "r", encoding="utf-8") as f:
+    STOPWORDS = set(line.strip() for line in f)
 
 SHINGLE_SIZE = 5
 NEAR_DUPLICATE_THRESHOLD = 0.9
@@ -26,7 +28,10 @@ def scraper(url, resp):
     words = [w.lower() for w in re.findall(r'\b\w+\b', text)]
 
     # add counts
-    global_word_counter.update(words)
+    
+    filtered_words = [w for w in words if w not in STOPWORDS and not w.isdigit()]
+
+    global_word_counter.update(filtered_words)
     # check if this page has most words
     if len(words) > max_words_page[1]:
         max_words_page = (url, len(words))

@@ -28,7 +28,7 @@ class Crawler(object):
                 self.logger.info(
                     f"Status: active_workers={alive}, queue_size={st['queue_size']}"
                 )
-                self.frontier.logger.info(
+                self.logger.info(
                     "Status: discovered=%d  queue=%d  completed=%d",
                     st["total_discovered"], st["queue_size"], st["completed"]
                 )

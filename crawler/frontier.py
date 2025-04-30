@@ -113,6 +113,7 @@ class Frontier(object):
                 #checking if the url is missing and also is allowed to be crawled
                 if hostname and self.check_subdomain(unfrag_url):
                     self.subdomains[hostname].add(unfrag_url)
+                    
 
     def mark_url_complete(self, url):
 

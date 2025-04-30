@@ -5,7 +5,6 @@ from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
 
-
 def main(config_file, restart):
     # print("[Launch] Starting crawler...")
     cparser = ConfigParser()
