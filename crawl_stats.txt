@@ -1,0 +1,75 @@
+UNIQUE URLS (count): 3731
+
+SUBDOMAINS (alphabetical)
+
+archive.ics.uci.edu, 8
+cbcl.ics.uci.edu, 7
+cml.ics.uci.edu, 9
+dynamo.ics.uci.edu, 1
+flamingo.ics.uci.edu, 5
+grape.ics.uci.edu, 120
+intranet.ics.uci.edu, 1
+isg.ics.uci.edu, 17
+sdcl.ics.uci.edu, 10
+sli.ics.uci.edu, 4
+swiki.ics.uci.edu, 206
+wics.ics.uci.edu, 26
+wiki.ics.uci.edu, 2
+www.ics.uci.edu, 39
+www.informatics.uci.edu, 1
+
+LONGEST PAGE:
+URL : https://cml.ics.uci.edu/category/aiml/page/4
+Word Count : 11909
+
+TOP-50 WORDS:
+the 7152
+and 4918
+of 3830
+to 3828
+in 2830
+a 2691
+1 2324
+by 2299
+for 1924
+7 1589
+years 1417
+2 1373
+ago 1371
+is 1369
+on 1339
+added 1337
+data 1306
+0 1241
+that 1211
+you 1180
+will 1171
+be 1169
+project 1017
+kb 1010
+pdf 996
+this 965
+3 885
+with 860
+are 835
+your 752
+10 741
+as 718
+s 699
+6 687
+from 685
+4 676
+an 671
+5 658
+lecture 656
+at 612
+or 608
+mjcarey 605
+it 605
+we 602
+can 572
+8 540
+smyth 530
+uci 504
+homework 488
+course 481
