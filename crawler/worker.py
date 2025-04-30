@@ -95,17 +95,14 @@ class Worker(Thread):
                     self.frontier.sync()
                     self.logger.info("Frontier is empty. Stopping Crawler.")
                     
-                    # print report
+                    # log report
                     if self.worker_id == 0:
-                        print("\n Report")
-                        print(f"Total unique pages found: {len(self.frontier.unique_urls)}")
-                        print("\nSubdomains:")
-                        for subdomain in sorted(self.frontier.subdomains):
-                            print(f"{subdomain}, {len(self.frontier.subdomains[subdomain])}")
-                        print(f"\nPage with most words: {max_words_page[0]} ({max_words_page[1]} words)")
-                        print("\nTop 50 words:")
+                        self.frontier.print_unique_urls()
+                        self.frontier.print_subdomains()
+                        self.frontier.logger.info(f"\nPage with most words: {max_words_page[0]} ({max_words_page[1]} words)")
+                        self.frontier.logger.info("\nTop 50 words:")
                         for word, freq in global_word_counter.most_common(50):
-                            print(f"{word}: {freq}")
+                            self.frontier.logger.info(f"{word}: {freq}")
                         
                     break
                 else:

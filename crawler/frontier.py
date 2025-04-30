@@ -43,10 +43,10 @@ class Frontier(object):
                 self.add_url(url)
         else:
             # Set the frontier state with contents of save file.
-            self._parse_save_file()
-            if not self.save:
+            if len(self.save) == 0:
                 for url in self.config.seed_urls:
                     self.add_url(url)
+            self._parse_save_file()
 
 
 
@@ -77,7 +77,7 @@ class Frontier(object):
         with self.Lock:
             now = time.time()
             for i, url in enumerate(self.to_be_downloaded):
-                # print(f"Trying URL: {url}") 
+                self.logger.info(f"Trying URL: {url}") 
                 domain = urlparse(url).netloc
                 last_access = self.domain_last_access.get(domain, 0)
                 crawl_delay = self.config.time_delay
@@ -97,7 +97,7 @@ class Frontier(object):
             unfrag_url, _ = urldefrag(url)
 
             urlhash = get_urlhash(unfrag_url)
-            # print(f"Adding URL to frontier: {unfrag_url}") 
+            self.logger.info(f"Adding URL to frontier: {unfrag_url}") 
             if urlhash not in self.save:
                 self.save[urlhash] = (unfrag_url, False)
                 self.save.sync()
@@ -181,15 +181,15 @@ class Frontier(object):
     # Uniqueness for the purposes of this assignment is ONLY established by the URL,
     # but discarding the fragment part.
     def print_unique_urls(self):
-        print(f"There are total of {len(self.unique_urls)} unique pages")
+        self.logger.info(f"There are total of {len(self.unique_urls)} unique pages")
 
 
 
     # 4. How many subdomains did you find in the uci.edu domain?
     def print_subdomains(self):
-        print("The following are the subdomains:")
+        self.logger.info("The following are the subdomains:")
         for subdomain in sorted(self.subdomains):
-            print(f"{subdomain}", len(self.subdomains[subdomain]))
+            self.logger.info(f"{subdomain}", len(self.subdomains[subdomain]))
 
     def sync(self):
         with self.Lock:
