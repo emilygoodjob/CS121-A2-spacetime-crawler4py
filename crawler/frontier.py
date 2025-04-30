@@ -23,6 +23,8 @@ class Frontier(object):
         self.domain_last_access = {}
         self.subdomains = defaultdict(set)
         self.unique_urls = set()
+        self.discovered = 0
+        self.completed = 0
         
         if not os.path.exists(self.config.save_file) and not restart:
             # Save file does not exist, but request to load save.
@@ -53,14 +55,18 @@ class Frontier(object):
         ''' This function can be overridden for alternate saving techniques. '''
         total_count = len(self.save)
         tbd_count = 0
+
         for url, completed in self.save.values():
+            self.discovered += 1
+            if completed:
+                self.completed += 1
+                continue
             if not completed and is_valid(url):
                 self.to_be_downloaded.append(url)
-
                 #building the unique urls set
                 self.unique_urls.add(url)
-
                 tbd_count += 1
+            
         self.logger.info(
             f"Found {tbd_count} urls to be downloaded from {total_count} "
             f"total urls discovered.")
@@ -97,6 +103,8 @@ class Frontier(object):
                 self.save.sync()
 
                 self.to_be_downloaded.append(unfrag_url)
+
+                self.discovered +=1
 
                 #building up the unique URLs set
                 self.unique_urls.add(unfrag_url)
@@ -155,6 +163,17 @@ class Frontier(object):
             self.logger.error(f"Error on {url}: {e}")
             return False
 
+
+    def get_status(self):
+        """
+        Return a dict of the information of the frontier.
+        """
+        with self.Lock:
+            return {
+                "total_discovered": self.discovered,
+                "queue_size": len(self.to_be_downloaded),
+                "completed": self.completed,
+            }
 
 
 

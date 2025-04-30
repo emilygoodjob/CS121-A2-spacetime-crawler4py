@@ -191,8 +191,13 @@ def start_workers(config, frontier):
         while True:
             alive = sum(1 for w in workers if w.is_alive())
             qsize = frontier.queue_size()
+            st = frontier.get_status()
             logger.info(
                 f"Status: active_workers={alive}, queue_size={qsize}"
+            )
+            logger.info(
+                "Status: discovered=%d  queue=%d  completed=%d",
+                st["total_discovered"], st["queue_size"], st["completed"]
             )
             if alive == 0:
                 break
