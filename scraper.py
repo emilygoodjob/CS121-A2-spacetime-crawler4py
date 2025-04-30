@@ -7,6 +7,7 @@ import threading
 
 # Duplicate detection
 seen_hashes = set()
+seen_urls = set()
 seen_shingles = dict()
 global_word_counter = Counter()
 max_words_page = ("", 0)
@@ -71,6 +72,10 @@ def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
+    if url in seen_urls:
+        return False
+    seen_urls.add(url)
+
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
