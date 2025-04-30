@@ -195,7 +195,7 @@ def start_workers(config, frontier):
             logger.info(
                 f"Status: active_workers={alive}, queue_size={qsize}"
             )
-            logger.info(
+            frontier.logger.info(
                 "Status: discovered=%d  queue=%d  completed=%d",
                 st["total_discovered"], st["queue_size"], st["completed"]
             )
