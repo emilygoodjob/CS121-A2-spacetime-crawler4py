@@ -30,7 +30,12 @@ def scraper(url, resp):
     # add counts
     
     filtered_words = [w for w in words if w not in STOPWORDS and not w.isdigit()]
-
+    
+    # Detect and avoid dead URLs that return a 200 status but no data
+    if len(filtered_words) < 10:
+        print(f"Dead or low-information page: {url}")
+        return []
+    
     global_word_counter.update(filtered_words)
     # check if this page has most words
     if len(words) > max_words_page[1]:
