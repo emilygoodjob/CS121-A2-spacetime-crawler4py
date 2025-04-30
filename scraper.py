@@ -80,6 +80,16 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+
+        if len(parsed.query.split('&')) > 5:
+            return False
+        if len(url) > 300:
+            return False
+        if parsed.path.count('/') > 10:
+            return False
+        # calender trap
+        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
+            return False
         
         domain = parsed.netloc.lower()
         if not (domain.endswith(".ics.uci.edu") or
