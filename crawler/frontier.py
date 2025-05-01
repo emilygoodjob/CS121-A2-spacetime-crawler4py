@@ -195,3 +195,8 @@ class Frontier(object):
     def sync(self):
         with self.Lock:
             self.save.sync()
+            
+    def queue_size(self):
+        with self.Lock:
+            return len(self.to_be_downloaded)
+

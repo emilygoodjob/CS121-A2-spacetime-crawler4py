@@ -1,10 +1,10 @@
-UNIQUE URLS (count): 18452
+UNIQUE URLS (count): 18456
 
 SUBDOMAINS (alphabetical)
 
 cbcl.ics.uci.edu, 22
 gitlab.ics.uci.edu, 409
-grape.ics.uci.edu, 27
+grape.ics.uci.edu, 31
 isg.ics.uci.edu, 3
 ngs.ics.uci.edu, 5
 sli.ics.uci.edu, 2
@@ -18,48 +18,48 @@ URL : https://cbcl.ics.uci.edu/doku.php/publications?do=diff&rev2%5B0%5D=1521756
 Word Count : 11986
 
 TOP-50 WORDS:
-to 4402
-the 3517
+to 4436
+the 3560
 hans 3298
 ics 3127
-and 2617
-in 2317
+and 2631
+in 2326
 2021 2004
-a 1962
-10 1960
+a 1973
+10 1965
 media 1858
-11 1765
-wiki 1763
-files 1742
+11 1770
+wiki 1765
+files 1744
 support 1733
 09 1713
-uci 1575
+uci 1583
 15 1502
-of 1492
+of 1496
 edu 1475
-for 1460
-12 1419
-14 1340
-show 1337
+for 1466
+12 1421
+14 1341
+show 1339
 04 1308
 page 1288
-you 1191
-by 1172
+you 1198
+by 1184
 08 1151
-this 1136
+this 1147
 01 1115
-2019 1081
-projects 1070
+2019 1084
+projects 1072
 2020 1064
+2018 999
 virtual_environments 998
-29 994
+29 997
 xhx 994
-2018 991
-be 990
+be 992
 manager 986
+changes 952
+http 946
 2017 946
-http 944
-changes 943
 22 900
 06 893
 content 891
@@ -67,4 +67,4 @@ content 891
 2023 864
 16 855
 home 853
-search 849
+13 849

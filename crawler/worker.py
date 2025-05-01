@@ -7,8 +7,6 @@ from utils import get_logger
 import scraper
 import time
 import threading
-# from robotexclusionrulesparser import RobotFileParser
-from urllib.robotparser import RobotFileParser
 from scraper import max_words_page, global_word_counter
 
 
@@ -18,61 +16,11 @@ class Worker(Thread):
         self.logger = get_logger(f"Worker-{worker_id}", "Worker")
         self.config = config
         self.frontier = frontier
-        self.robot_parsers = {} # store robots.txt parsers for each domain
         
         # basic check for requests in scraper
         assert {getsource(scraper).find(req) for req in {"from requests import", "import requests"}} == {-1}, "Do not use requests in scraper.py"
         assert {getsource(scraper).find(req) for req in {"from urllib.request import", "import urllib.request"}} == {-1}, "Do not use urllib.request in scraper.py"
         super().__init__(daemon=True)
-
-
-    def get_crawl_delay(self, domain):
-        """
-        Get the crawl delay for the domain from robots.txt.
-        """
-        rp = self.robot_parsers.get(domain)
-        if rp is None:
-            return self.config.time_delay
-        
-        # Get Crawl-Delay
-        # crawl_delay = rp.get_crawl_delay("*")
-        crawl_delay = rp.crawl_delay("*")
-        if callable(crawl_delay):
-            crawl_delay = crawl_delay("*")
-        if crawl_delay is None:
-            return self.config.time_delay
-        return crawl_delay
-
-
-    def can_fetch(self, url):
-        """
-        Check if the URL can be fetched based on robots.txt rules.
-        """
-        parsed_url = urlparse(url)
-        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        
-        if domain not in self.robot_parsers:
-            # Download and parse robots.txt
-            robots_url = f"{domain}/robots.txt"
-            self.logger.info(f"Fetching robots.txt from {robots_url}")
-            rp = RobotFileParser()
-            try:
-                # rp.fetch(robots_url)
-                rp.set_url(robots_url)
-                rp.read()
-                self.robot_parsers[domain] = rp
-            except Exception as e:
-                self.logger.warning(f"Failed to fetch robots.txt from {robots_url}: {e}")
-                self.robot_parsers[domain] = None
-        
-        rp = self.robot_parsers.get(domain)
-        if rp is None:
-            return True
-        
-        # To check if the URL can be fetched
-        # return rp.is_allowed("*", url)
-        return rp.can_fetch("*", url)
-
         
     def run(self):
         # self.logger.info("Worker started") 
@@ -107,18 +55,6 @@ class Worker(Thread):
                     break
                 else:
                     continue
-
-            # check if the URL can be fetched based on robots.txt rules
-            if not self.can_fetch(tbd_url):
-                self.logger.info(f"Skipping {tbd_url} due to robots.txt rules.")
-                self.frontier.mark_url_complete(tbd_url)
-                self.frontier.sync()
-                continue
-
-            # get crawl delay for the domain
-            parsed_url = urlparse(tbd_url)
-            domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-            crawl_delay = self.get_crawl_delay(domain)
 
             # download the URL    
             resp = download(tbd_url, self.config, self.logger)
@@ -164,8 +100,7 @@ class Worker(Thread):
                 self.frontier.sync()
 
             # sleep for the crawl delay before the next request
-            self.logger.info(f"Sleeping for {crawl_delay}s before next request.")
-            time.sleep(crawl_delay)
+            time.sleep(self.config.time_delay)
 
 
 def start_workers(config, frontier):
@@ -210,7 +145,4 @@ def start_workers(config, frontier):
         w.join()
     status_thread.join()
     logger.info("All workers finished")
-    
-def queue_size(self):
-    with self.Lock:
-        return len(self.to_be_downloaded)
+
