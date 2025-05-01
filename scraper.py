@@ -1,15 +1,63 @@
 import re
 import hashlib
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urldefrag, urljoin
 from bs4 import BeautifulSoup
 from collections import Counter
 import threading
+import atexit
+import pickle
+import os
+
 # Duplicate detection
 seen_hashes = set()
 seen_shingles = dict()
 global_word_counter = Counter()
 max_words_page = ("", 0)
 seen_shingles_lock = threading.Lock()
+
+# Duplicate load and save
+EXACT_DUP_FILE = 'seen_hashes.pkl'
+NEAR_DUP_FILE = 'seen_shingles.pkl'
+
+def load_dup_state(filepath, default):
+    if os.path.exists(filepath):
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+    return default
+
+seen_hashes = load_dup_state(EXACT_DUP_FILE, set())
+seen_shingles = load_dup_state(NEAR_DUP_FILE, {})
+
+def save_dup_state():
+    with open(EXACT_DUP_FILE, 'wb') as f:
+        pickle.dump(seen_hashes, f)
+    with open(NEAR_DUP_FILE, 'wb') as f:
+        pickle.dump(seen_shingles, f)
+    print("[INFO] Saved exact and near duplicate states.")
+
+# Store state file
+STATE_FILE = "crawl_stats.pkl"
+
+def save_state_file(max_words_page, global_word_counter):
+    state = {
+        "max_words_page": max_words_page,
+        "global_word_counter": global_word_counter
+    }
+    with open(STATE_FILE, "wb") as f:
+        pickle.dump(state, f)
+    print("State saved to", STATE_FILE)
+
+def load_state_file():
+    global max_words_page, global_word_counter
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "rb") as f:
+            state = pickle.load(f)
+        max_words_page = state["max_words_page"]
+        global_word_counter.update(state["global_word_counter"])
+        print("State loaded from", STATE_FILE)
+
+load_state_file()
+
 
 with open("stopwords.txt", "r", encoding="utf-8") as f:
     STOPWORDS = set(line.strip() for line in f)
@@ -39,8 +87,8 @@ def scraper(url, resp):
     
     global_word_counter.update(filtered_words)
     # check if this page has most words
-    if len(words) > max_words_page[1]:
-        max_words_page = (url, len(words))
+    if len(filtered_words) > max_words_page[1]:
+        max_words_page = (url, len(filtered_words))
     
     # check exact duplicates & near duplicates
     if is_exact_duplicate(text):
@@ -64,14 +112,15 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    links = set()
+    links = []
     try:
         soup = BeautifulSoup(resp.raw_response.content, 'lxml')
         
         for anchor in soup.find_all('a', href=True):
             href = anchor['href']
-            absolute_url = urljoin(resp.url, urlparse(href).path)
-            links.add(absolute_url)
+            href = urldefrag(href)[0]
+            absolute_url = urljoin(resp.url, href)
+            links.append(absolute_url)
     except Exception as e:
         print(f"Error extracting links from {url}: {e}")
         

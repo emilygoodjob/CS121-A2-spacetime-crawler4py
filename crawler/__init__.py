@@ -4,6 +4,7 @@ from crawler.worker import Worker
 from pathlib import Path
 import time
 import threading
+from scraper import save_dup_state, save_state_file, max_words_page, global_word_counter
 
 class Crawler(object):
     def __init__(self, config, restart, frontier_factory=Frontier, worker_factory=Worker):
@@ -19,6 +20,8 @@ class Crawler(object):
             for worker_id in range(self.config.threads_count)]
         for worker in self.workers:
             worker.start()
+
+        # Loop for printing status in logger file and text file    
 
         def print_status_loop():
             interval = 120 # seconds # todo: make this configurable
@@ -86,6 +89,15 @@ class Crawler(object):
             daemon=True
         )
         self.print_thread.start()
+        
+        # Loop for save state
+        def periodic_save():
+            while True:
+                time.sleep(120)
+                save_state_file(max_words_page, global_word_counter)
+                save_dup_state()
+
+        threading.Thread(target=periodic_save, daemon=True).start()
 
 
     def start(self):
