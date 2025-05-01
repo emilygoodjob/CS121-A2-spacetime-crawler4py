@@ -77,7 +77,7 @@ class Frontier(object):
         with self.Lock:
             now = time.time()
             for i, url in enumerate(self.to_be_downloaded):
-                self.logger.info(f"Trying URL: {url}") 
+                # self.logger.info(f"Trying URL: {url}") 
                 domain = urlparse(url).netloc
                 last_access = self.domain_last_access.get(domain, 0)
                 crawl_delay = self.config.time_delay

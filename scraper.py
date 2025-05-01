@@ -84,10 +84,10 @@ def is_valid(url):
     # There are already some conditions that return False.
     try:
         parsed = urlparse(url)
+        query_parts = parsed.query.lower().split('&')
         if parsed.scheme not in set(["http", "https"]):
             return False
-
-        if len(parsed.query.split('&')) > 5:
+        if len(query_parts) > 5:
             return False
         if len(url) > 300:
             return False
@@ -99,9 +99,22 @@ def is_valid(url):
         # Avoid action=download or download-like traps
         if "action=download" in parsed.query.lower():
             return False
-        if any(part.lower().startswith('version=') for part in parsed.query.split('&')):
+        if any(part.startswith(('version=', 'do=', 'rev=')) for part in query_parts):
             return False
-        
+        if any(trap in parsed.path.lower() for trap in ['diff', 'media', 'history']):
+            return False
+        if len(parsed.query) > 200:
+            return False
+        pagination_patterns = ('page=', 'start=', 'offset=')
+        if any(part.startswith(p) and re.search(r'\d+', part) for p in pagination_patterns for part in query_parts):
+            return False
+        trap_params = ('session=', 'sid=', 'token=', 'jsessionid=')
+        if any(part.startswith(p) for p in trap_params for part in query_parts):
+            return False
+        if re.search(r'\.(php|aspx|jsp)$', parsed.path.lower()):
+            if any(key in parsed.query.lower() for key in ('id=', 'files=')):
+                return False
+
         domain = parsed.netloc.lower()
         if not (domain.endswith(".ics.uci.edu") or
                 domain.endswith(".cs.uci.edu") or

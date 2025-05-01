@@ -1,0 +1,63 @@
+UNIQUE URLS (count): 5306
+
+SUBDOMAINS (alphabetical)
+
+gitlab.ics.uci.edu, 5
+wics.ics.uci.edu, 3
+www.ics.uci.edu, 51
+
+LONGEST PAGE:
+URL : http://www.ics.uci.edu/~eppstein/gina/dt-interpolate.html
+Word Count : 837
+
+TOP-50 WORDS:
+cp 19
+gitlab 12
+loading 12
+interpolation 10
+delaunay 9
+points 8
+triangulation 8
+eppstein 7
+file 7
+surface 7
+sign 6
+movie 6
+copy 6
+https 6
+clone 6
+url 6
+git 6
+ics 6
+data 6
+redleaf 6
+david 5
+comp 5
+skip 5
+content 5
+wics 5
+uci 5
+watson 5
+set 5
+publications 4
+problem 4
+wedges 4
+mars 4
+explore 4
+files 4
+changes 4
+side 4
+cancel 4
+comment 4
+winter 4
+week 4
+code 4
+suppose 4
+boundary 4
+algorithms 4
+au 4
+university 4
+writes 4
+will 4
+sibson 4
+contour 4
