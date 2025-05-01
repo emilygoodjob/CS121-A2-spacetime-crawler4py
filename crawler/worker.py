@@ -72,10 +72,10 @@ class Worker(Thread):
                 self.frontier.mark_url_complete(tbd_url)
                 continue
             # Skip 404
-            if resp.raw_response is None:
-                self.logger.warning(f"Raw response is None for {tbd_url}. Skipping.")
-                self.frontier.sync()
+            if not (200 <= resp.status < 300):
+                self.logger.warning(f"Skipping {tbd_url} due to HTTP status {resp.status}.")
                 self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
                 continue
             # Check if the content length is too large
             content_length = resp.raw_response.headers.get("Content-Length")
