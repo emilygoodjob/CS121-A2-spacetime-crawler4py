@@ -23,6 +23,7 @@ def scraper(url, resp):
     
     # handle successful responses
     if resp.status != 200 or not resp.raw_response:
+        print(f"Non-200 response ({resp.status}) for: {url}")
         return []
     text = extract_visible_text(resp)
     words = [w.lower() for w in re.findall(r'\b\w+\b', text)]
@@ -95,9 +96,10 @@ def is_valid(url):
         # calender trap
         if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
             return False
-        
         # Avoid action=download or download-like traps
         if "action=download" in parsed.query.lower():
+            return False
+        if any(part.lower().startswith('version=') for part in parsed.query.split('&')):
             return False
         
         domain = parsed.netloc.lower()
