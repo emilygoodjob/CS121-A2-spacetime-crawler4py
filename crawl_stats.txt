@@ -1,62 +1,61 @@
-UNIQUE URLS (count): 1177
+UNIQUE URLS (count): 1179
 
 SUBDOMAINS (alphabetical)
 
-seal.ics.uci.edu, 5
-www.ics.uci.edu, 2
+www.stat.uci.edu, 4
 
 LONGEST PAGE:
-URL : https://jgarcia.ics.uci.edu/?page_id=295
-Word Count : 380
+URL : https://www.stat.uci.edu/seminar-series/seminar-series-2011-2012
+Word Count : 339
 
 TOP-50 WORDS:
-uci 196
+uci 199
 ics 101
 informatics 99
 software 90
 phd 90
 engineering 66
 professor 60
-dbh 37
+dbh 38
+data 34
 stats 31
-student 28
-data 28
-students 25
-department 24
+student 29
+department 28
+statistics 28
+students 26
+computer 25
+graduate 24
 ms 24
-computer 23
 paper 23
-graduate 22
-analysis 21
-undergraduate 20
+analysis 22
+undergraduate 21
 accepted 20
-statistics 19
-ph 17
-course 16
-science 16
+ph 18
+course 18
+science 18
+abstract 18
+statistical 16
+degrees 15
+october 15
+february 15
 september 14
 july 14
+june 14
+january 14
 december 14
 hours 14
-degrees 13
+faculty 13
 associate 13
-october 13
-june 13
-january 13
+bren 13
+april 13
+march 13
 android 13
+irvine 12
 profiles 12
+seminar 12
 projects 12
 joshua 12
 garcia 12
 emeritus 12
-statistical 12
-methods 12
-people 11
-faculty 11
-iseb 11
-systems 11
-august 11
-february 11
-three 11
-master 10
-design 10
+uc 12
+school 12

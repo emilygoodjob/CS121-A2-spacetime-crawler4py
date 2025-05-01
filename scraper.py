@@ -1,6 +1,6 @@
 import re
 import hashlib
-from urllib.parse import urlparse, urldefrag, urljoin
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 from collections import Counter
 import threading
@@ -112,15 +112,14 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    links = []
+    links = set()
     try:
         soup = BeautifulSoup(resp.raw_response.content, 'lxml')
         
         for anchor in soup.find_all('a', href=True):
             href = anchor['href']
-            href = urldefrag(href)[0]
-            absolute_url = urljoin(resp.url, href)
-            links.append(absolute_url)
+            absolute_url = urljoin(resp.url, urlparse(href).path)
+            links.add(absolute_url)
     except Exception as e:
         print(f"Error extracting links from {url}: {e}")
         
