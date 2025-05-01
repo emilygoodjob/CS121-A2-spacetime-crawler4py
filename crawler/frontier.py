@@ -93,6 +93,8 @@ class Frontier(object):
         #make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
             url = normalize(url)
+            if not is_valid(url):
+                return
             #get rid of the fragment and starting here using fragment_clean version urls
             unfrag_url, _ = urldefrag(url)
 
