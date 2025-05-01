@@ -15,7 +15,7 @@ with open("stopwords.txt", "r", encoding="utf-8") as f:
     STOPWORDS = set(line.strip() for line in f)
 
 SHINGLE_SIZE = 5
-NEAR_DUPLICATE_THRESHOLD = 0.9
+NEAR_DUPLICATE_THRESHOLD = 0.6
 
 def scraper(url, resp):
     global global_word_counter
@@ -33,7 +33,7 @@ def scraper(url, resp):
     filtered_words = [w for w in words if w not in STOPWORDS and not w.isdigit()]
     
     # Detect and avoid dead URLs that return a 200 status but no data
-    if len(filtered_words) < 10:
+    if len(filtered_words) < 100:
         print(f"Dead or low-information page: {url}")
         return []
     
@@ -86,33 +86,67 @@ def is_valid(url):
         query_parts = parsed.query.lower().split('&')
         if parsed.scheme not in set(["http", "https"]):
             return False
+        
+        # Basic sanity checks
         if len(query_parts) > 5:
             return False
         if len(url) > 300:
             return False
         if parsed.path.count('/') > 10:
             return False
-        # calender trap
-        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
-            return False
-        # Avoid action=download or download-like traps
-        if "action=download" in parsed.query.lower():
-            return False
-        if any(part.startswith(('version=', 'do=', 'rev=')) for part in query_parts):
-            return False
-        if any(trap in parsed.path.lower() for trap in ['diff', 'media', 'history']):
-            return False
         if len(parsed.query) > 200:
+            return False
+
+        # Calendar & pagination traps
+        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
             return False
         pagination_patterns = ('page=', 'start=', 'offset=')
         if any(part.startswith(p) and re.search(r'\d+', part) for p in pagination_patterns for part in query_parts):
             return False
+
+        # Session/token traps
         trap_params = ('session=', 'sid=', 'token=', 'jsessionid=')
         if any(part.startswith(p) for p in trap_params for part in query_parts):
             return False
+
+        # Download/action traps
+        if "action=download" in parsed.query.lower():
+            return False
+        if any(part.startswith(('version=', 'do=', 'rev=')) for part in query_parts):
+            return False
+
+        # Path-based traps
+        if any(trap in parsed.path.lower() for trap in ['diff', 'media', 'history']):
+            return False
+
+        # Suspicious file traps
         if re.search(r'\.(php|aspx|jsp)$', parsed.path.lower()):
             if any(key in parsed.query.lower() for key in ('id=', 'files=')):
                 return False
+
+        # Long hash (commit-like) traps
+        if re.search(r'[a-fA-F0-9]{32,}', parsed.path) or re.search(r'[a-fA-F0-9]{32,}', parsed.query):
+            return False
+
+        # GitLab-specific traps
+        gitlab_ban_paths = (
+            '/forks', '/issues', '/starrers', '/merge_requests', '/pipelines',
+            '/jobs', '/blame', '/tags', '/branches', '/commits', '/repository',
+            '/import', '/activity'
+        )
+        if '/-/' in url:
+            if url.rstrip('/').endswith(gitlab_ban_paths):
+                return False
+            if parsed.path.endswith('/compare'):
+                return False
+            if re.search(r'/(commit|tree|compare)/[a-fA-F0-9]{10,}', parsed.path):
+                return False
+            if parsed.path.startswith('/-/commit') and any(p in parsed.query.lower() for p in ['view=', 'expanded=']):
+                return False
+
+        # Swiki traps (index loops)
+        if 'idx=' in parsed.query.lower():
+            return False
 
         domain = parsed.netloc.lower()
         if not (domain.endswith(".ics.uci.edu") or
