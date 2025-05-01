@@ -96,6 +96,10 @@ def is_valid(url):
         if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
             return False
         
+        # Avoid action=download or download-like traps
+        if "action=download" in parsed.query.lower():
+            return False
+        
         domain = parsed.netloc.lower()
         if not (domain.endswith(".ics.uci.edu") or
                 domain.endswith(".cs.uci.edu") or
