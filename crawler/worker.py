@@ -55,6 +55,12 @@ class Worker(Thread):
                     break
                 else:
                     continue
+            
+            if not scraper.is_valid(tbd_url):
+                self.logger.info(f"Skipping invalid URL {tbd_url}. Marking as complete.")
+                self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
+                continue
 
             # download the URL    
             resp = download(tbd_url, self.config, self.logger)
