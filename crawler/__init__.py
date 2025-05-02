@@ -22,7 +22,6 @@ class Crawler(object):
             worker.start()
 
         # Loop for printing status in logger file and text file    
-
         def print_status_loop():
             interval = 120 # seconds # todo: make this configurable
             while True:
@@ -38,7 +37,6 @@ class Crawler(object):
                 if alive == 0:
                     break
                 time.sleep(interval)
-
         self.status_thread = threading.Thread(
             target=print_status_loop,
             name="StatusThread",
@@ -46,6 +44,7 @@ class Crawler(object):
         )
         self.status_thread.start()
 
+        # Loop for printing status in text file
         def update_status_file():
             interval = 120
             outfile = Path("crawl_stats.txt")
@@ -82,7 +81,6 @@ class Crawler(object):
                 if not any(w.is_alive() for w in self.workers):
                     break
                 time.sleep(interval)
-
         self.print_thread = threading.Thread(
             target=update_status_file,
             name="PrintThread",
@@ -98,7 +96,6 @@ class Crawler(object):
                 save_dup_state()
 
         threading.Thread(target=periodic_save, daemon=True).start()
-
 
     def start(self):
         self.start_async()

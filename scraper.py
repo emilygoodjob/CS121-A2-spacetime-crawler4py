@@ -58,8 +58,11 @@ def load_state_file():
 
 load_state_file()
 
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
-with open("stopwords.txt", "r", encoding="utf-8") as f:
+stopwords_path = os.path.join(current_dir, "stopwords.txt")
+
+with open(stopwords_path, "r", encoding="utf-8") as f:
     STOPWORDS = set(line.strip() for line in f)
 
 SHINGLE_SIZE = 5
