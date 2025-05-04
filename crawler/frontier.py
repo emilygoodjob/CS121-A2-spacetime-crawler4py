@@ -78,14 +78,17 @@ class Frontier(object):
             f"total urls discovered.")
 
     def get_tbd_url(self):
+        """
+        Get the next URL to be downloaded from the frontier.
+        """
 
         # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
             now = time.time()
             for i, url in enumerate(self.to_be_downloaded):
                 # self.logger.info(f"Trying URL: {url}") 
-                domain = urlparse(url).netloc
-                last_access = self.domain_last_access.get(domain, 0)
+                domain = urlparse(url).netloc 
+                last_access = self.domain_last_access.get(domain, 0) 
                 crawl_delay = self.config.time_delay
 
                 # Respect the crawl delay
@@ -93,32 +96,40 @@ class Frontier(object):
                     self.domain_last_access[domain] = now
                     return self.to_be_downloaded.pop(i)
             return None
+        
 
     def add_url(self, url):
 
-        #make sure only one thread at a time for the thread-safe purpose
+        # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
             url = normalize(url)
+            
+            # check if the url is valid
             if not is_valid(url):
                 return
-            #get rid of the fragment and starting here using fragment_clean version urls
+            
+            # get rid of the fragment and starting here using fragment_clean version urls
             unfrag_url, _ = urldefrag(url)
 
             urlhash = get_urlhash(unfrag_url)
-            self.logger.info(f"Adding URL to frontier: {unfrag_url}") 
+            if url in self.save:
+                self.logger.info(f"URL already in the frontier or completed: {url}")
+                return
+            
             if urlhash not in self.save:
+                self.logger.info(f"Adding URL to frontier: {unfrag_url}") 
                 self.save[urlhash] = (unfrag_url, False)
                 self.save.sync()
 
                 self.to_be_downloaded.append(unfrag_url)
 
-                self.discovered +=1
+                self.discovered +=1 # discovered means that the url is added to the frontier
 
                 #building up the unique URLs set
                 self.unique_urls.add(unfrag_url)
                 parsed_unfrag = urlparse(unfrag_url)
                 hostname = parsed_unfrag.hostname
-                #checking if the url is missing and also is allowed to be crawled
+                # Check which subdomain the URL is belonging to
                 if hostname and self.check_subdomain(unfrag_url):
                     self.subdomains[hostname].add(unfrag_url)
                     

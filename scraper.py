@@ -149,7 +149,11 @@ def is_valid(url):
             return False
 
         # Calendar & pagination traps
+        # year/month/day traps
         if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
+            return False
+        # year/month traps
+        if re.search(r'\d{4}[-/]\d{2}', url): # year/month
             return False
         pagination_patterns = ('page=', 'start=', 'offset=')
         if any(part.startswith(p) and re.search(r'\d+', part) for p in pagination_patterns for part in query_parts):
@@ -197,6 +201,18 @@ def is_valid(url):
 
         # Swiki traps (index loops)
         if 'idx=' in parsed.query.lower():
+            return False
+        
+        # Skip tel and mail links
+        # path of tel links like (949) xxx-xxxx
+        # path of mail links like xxx@uci.edu
+        if parsed.scheme in ['tel', 'mailto']:
+            return False
+        
+        PHONE_RE = re.compile(r'\(\d{3}\)\s?\d{3}-\d{4}')
+        EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@uci\.edu', re.I)
+        path_and_query = parsed.path + "?" + parsed.query
+        if PHONE_RE.search(path_and_query) or EMAIL_RE.search(path_and_query):
             return False
 
         domain = parsed.netloc.lower()
