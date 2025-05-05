@@ -84,19 +84,8 @@ class Frontier(object):
 
         # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
-            now = time.time()
-            for i, url in enumerate(self.to_be_downloaded):
-                # self.logger.info(f"Trying URL: {url}") 
-                domain = urlparse(url).netloc 
-                last_access = self.domain_last_access.get(domain, 0) 
-                crawl_delay = self.config.time_delay
+            return self.to_be_downloaded.pop()
 
-                # Respect the crawl delay
-                if now - last_access >= crawl_delay:
-                    self.domain_last_access[domain] = now
-                    return self.to_be_downloaded.pop(i)
-            return None
-        
 
     def add_url(self, url):
 
