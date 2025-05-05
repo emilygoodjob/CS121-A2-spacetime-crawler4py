@@ -84,7 +84,10 @@ class Frontier(object):
 
         # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
-            return self.to_be_downloaded.pop()
+            if len(self.to_be_downloaded) > 0:
+                return self.to_be_downloaded.pop()
+            else:
+                return None
 
 
     def add_url(self, url):
