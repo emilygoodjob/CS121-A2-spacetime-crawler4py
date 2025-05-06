@@ -29,33 +29,26 @@ class Worker(Thread):
         min_file_size = 100  # todo: make this configurable
         pages_crawled = 0
         while True:
-            tbd_url = self.frontier.get_tbd_url()
+            tbd_url, next_access_time = self.frontier.get_tbd_url()
 
-            # sleep and retry
+            # sleep and retry for 3 times
             if not tbd_url:
-                # sleep for a while before checking again
-                self.logger.info(f"Frontier is empty. Sleeping for {retry_delay}s.")
-                time.sleep(retry_delay)
-                tbd_url = self.frontier.get_tbd_url()
-                if not tbd_url:
-                    # if still empty, stop the crawler
-                    # self.frontier.stop()
-                    self.frontier.sync()
-                    self.logger.info("Frontier is empty. Stopping Crawler.")
+                for _ in range(3):
+                    if tbd_url:
+                        break
+                    if not tbd_url:
+                        if next_access_time:
+                            self.logger.info(f"Need to wait for the next access time.")
+                            time.sleep(next_access_time - time.time())
+                        else:
+                            self.logger.info("No URLs to download. Sleeping for some time.")
+                            time.sleep(retry_delay)
+                    tbd_url, next_access_time = self.frontier.get_tbd_url()
                     
-                    # log report
-                    if self.worker_id == 0:
-                        self.frontier.print_unique_urls()
-                        self.frontier.print_subdomains()
-                        self.frontier.logger.info(f"\nPage with most words: {max_words_page[0]} ({max_words_page[1]} words)")
-                        self.frontier.logger.info("\nTop 50 words:")
-                        for word, freq in global_word_counter.most_common(50):
-                            self.frontier.logger.info(f"{word}: {freq}")
+            if not tbd_url: # If wait for 3 times and still no url, exit
+                self.logger.info("No URLs to download. Exiting.")
+                break # while loop will exit
                         
-                    break
-                else:
-                    continue
-            
             if not scraper.is_valid(tbd_url):
                 self.logger.info(f"Skipping invalid URL {tbd_url}. Marking as complete.")
                 self.frontier.mark_url_complete(tbd_url)
@@ -112,48 +105,4 @@ class Worker(Thread):
 
             # sleep for the crawl delay before the next request
             time.sleep(self.config.time_delay)
-
-
-def start_workers(config, frontier):
-    """
-    Start a worker thread.
-    """
-    workers = []
-
-    # start all the worker threads
-    for worker_id in range(config.threads_count):
-        logger = get_logger(f"Worker-{worker_id}", "Worker")
-        worker = Worker(worker_id, config, frontier)
-        workers.append(worker)
-        worker.start()
-        logger.info(f"Worker-{worker_id} started.")
-
-    # print status of all the workers
-    def print_status_loop():
-        interval = 120 # seconds # todo: make this configurable
-        while True:
-            alive = sum(1 for w in workers if w.is_alive())
-            qsize = frontier.queue_size()
-            st = frontier.get_status()
-            logger.info(
-                f"Status: active_workers={alive}, queue_size={qsize}"
-            )
-            frontier.logger.info(
-                "Status: discovered=%d  queue=%d  completed=%d",
-                st["total_discovered"], st["queue_size"], st["completed"]
-            )
-            if alive == 0:
-                break
-            time.sleep(interval)
-
-    status_thread = threading.Thread(
-        target=print_status_loop, name="StatusThread", daemon=True
-    )
-    status_thread.start()
-
-    # wait for all the workers to finish
-    for w in workers:
-        w.join()
-    status_thread.join()
-    logger.info("All workers finished")
 

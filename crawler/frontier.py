@@ -12,12 +12,16 @@ from scraper import is_valid, EXACT_DUP_FILE, NEAR_DUP_FILE, STATE_FILE
 from collections import defaultdict
 from urllib.parse import urlparse, urldefrag
 import heapq
+from collections import deque
 
 class Frontier(object):
     def __init__(self, config, restart):
         self.logger = get_logger("FRONTIER")
         self.config = config
         self.to_be_downloaded = []
+        self.domain_queues  = defaultdict(deque)
+        self.domain_next    = defaultdict(float)
+        self.ready_heap     = []
 
         ## adding more needed attributes
         self.Lock = RLock()
@@ -82,23 +86,54 @@ class Frontier(object):
         """
         Get the next URL to be downloaded from the frontier.
         """
-        
+          
+        # with self.lock:
+        #     while self.ready_heap:
+        #         # pop the next domain to be downloaded
+        #         next_t, domain = heapq.heappop(self.ready_heap)
+        #         now = time.time()
+
+        #         if next_t > now:
+        #             # If the next time is in the future, push it back and return None
+        #             heapq.heappush(self.ready_heap, (next_t, domain))
+        #             self.logger.info(f"Waiting for {domain} to be ready.")
+        #             return None                      
+
+        #         dq = self.domain_queues[domain]
+        #         # if the queue is empty, continue to the next domain
+        #         if not dq:       
+        #             continue
+               
+        #         url = dq.popleft()
+
+        #         # set the next time to be downloaded for this domain
+        #         # and push it back to the heap
+        #         self.domain_next[domain] = now + self.politeness
+        #         if dq: 
+        #             heapq.heappush(self.ready_heap,
+        #                            (self.domain_next[domain], domain))
+        #         return url
+        #     return None
         
         # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
-            now = time.time()
+            smallest_next_access_time = time.time() + self.config.time_delay
             for i, url in enumerate(self.to_be_downloaded):
-                now = time.time()
-                # self.logger.info(f"Trying URL: {url}") 
                 domain = urlparse(url).netloc 
                 last_access = self.domain_last_access.get(domain, 0) 
                 crawl_delay = self.config.time_delay
-
+                now = time.time()
+                smallest_next_access_time = min(smallest_next_access_time, last_access + crawl_delay)
                 # Respect the crawl delay
                 if now - last_access >= crawl_delay:
                     self.domain_last_access[domain] = now
-                    return self.to_be_downloaded.pop(i)
-            return None
+                    return self.to_be_downloaded.pop(i), None
+            if self.to_be_downloaded: # if there are still urls in the queue but not ready to be downloaded yet
+                self.logger.info(f"Waiting for {smallest_next_access_time - time.time()} seconds to download the next URL.")
+                return None, smallest_next_access_time
+            else: # if there are no urls in the queue, return None
+                self.logger.info("No URLs to download.")
+                return None, None
         
 
     def add_url(self, url):
@@ -146,7 +181,8 @@ class Frontier(object):
                 # This should not happen.
                 self.logger.error(
                     f"Completed url {url}, but have not seen it before.")
-
+            
+            self.completed += 1
             self.save[urlhash] = (url, True)
             self.save.sync()
 
