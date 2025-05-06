@@ -14,15 +14,11 @@ def main(config_file, restart):
     config = Config(cparser)
     # print("[Launch] Getting cache server...") 
     config.cache_server = get_cache_server(config, restart)
-    if restart:
-        os.remove(crawl_stats.pkl)
-        os.remove(seen_hashes.pkl)
-        os.remove(seen_shingles.pkl)
     # print("[Launch] Initializing crawler...")
     crawler = Crawler(config, restart)
     # print("[Launch] Starting crawler execution.")
     atexit.register(save_dup_state)
-    atexit.register(lambda: save_state_file(max_words_page, global_word_counter))
+    atexit.register(lambda: save_state_file(crawler.frontier))
     crawler.start()
 
 

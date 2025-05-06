@@ -114,6 +114,13 @@ class Worker(Thread):
                 self.frontier.sync()
                 continue
 
+            # Check if the response content is of low information
+            if scraper.is_low_information(scraper.extract_visible_text(resp)):
+                self.logger.info(f"Skipping {tbd_url} because content is of low information.")
+                self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
+                continue
+
             self.logger.info(
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
                 f"using cache {self.config.cache_server}.")

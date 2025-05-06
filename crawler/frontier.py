@@ -6,6 +6,7 @@ from threading import Thread, RLock
 from queue import Queue, Empty
 
 from utils import get_logger, get_urlhash, normalize
+import scraper
 from scraper import is_valid, EXACT_DUP_FILE, NEAR_DUP_FILE, STATE_FILE
 
 #adding extra libs
@@ -55,6 +56,9 @@ class Frontier(object):
                 os.remove(STATE_FILE)
         # Load existing save file, or create one if it does not exist.
         self.save = shelve.open(self.config.save_file)
+        scraper.seen_hashes = scraper.load_dup_state(EXACT_DUP_FILE, set())
+        scraper.seen_shingles = scraper.load_dup_state(NEAR_DUP_FILE, {})
+        scraper.load_state_file(self)
         if restart:
             for url in self.config.seed_urls:
                 self.add_url(url)
@@ -191,6 +195,8 @@ class Frontier(object):
             self.completed += 1
             self.save[urlhash] = (url, True)
             self.save.sync()
+            if not self.to_be_downloaded:
+                self.logger.info("Frontier is empty.")
 
 
 

@@ -10,7 +10,7 @@ def download(url, config, logger=None):
         resp = requests.get(
             f"http://{host}:{port}/",
             params=[("q", f"{url}"), ("u", f"{config.user_agent}")],
-            timeout=25)
+            timeout=3)
     except requests.exceptions.Timeout:
         return Response({
             "error": "Request Timeout (>3s)",

@@ -92,7 +92,7 @@ class Crawler(object):
         def periodic_save():
             while True:
                 time.sleep(120)
-                save_state_file(max_words_page, global_word_counter)
+                save_state_file(self.frontier, max_words_page, global_word_counter)
                 save_dup_state()
 
         threading.Thread(target=periodic_save, daemon=True).start()

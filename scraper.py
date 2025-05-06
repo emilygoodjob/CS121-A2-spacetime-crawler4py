@@ -8,6 +8,8 @@ import atexit
 import pickle
 import os
 
+from collections import Counter, defaultdict
+
 # Duplicate detection
 seen_hashes = set()
 seen_shingles = dict()
@@ -25,9 +27,6 @@ def load_dup_state(filepath, default):
             return pickle.load(f)
     return default
 
-seen_hashes = load_dup_state(EXACT_DUP_FILE, set())
-seen_shingles = load_dup_state(NEAR_DUP_FILE, {})
-
 def save_dup_state():
     with open(EXACT_DUP_FILE, 'wb') as f:
         pickle.dump(seen_hashes, f)
@@ -38,25 +37,58 @@ def save_dup_state():
 # Store state file
 STATE_FILE = "crawl_stats.pkl"
 
-def save_state_file(max_words_page, global_word_counter):
+def save_state_file(frontier):
+    """
+    Save the state of the crawler from a file.
+    The state includes:
+        • max_words_page
+        • global_word_counter
+        • frontier.unique_urls
+        • frontier.subdomains
+    """
     state = {
-        "max_words_page": max_words_page,
-        "global_word_counter": global_word_counter
+        "max_words_page":      max_words_page,
+        "global_word_counter": dict(global_word_counter),
+        "unique_urls":         list(frontier.unique_urls),
+        "subdomains": {
+            sd: list(urls) for sd, urls in frontier.subdomains.items()
+        }
     }
     with open(STATE_FILE, "wb") as f:
         pickle.dump(state, f)
-    print("State saved to", STATE_FILE)
+    print("[INFO] State saved to", STATE_FILE)
 
-def load_state_file():
-    global max_words_page, global_word_counter
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "rb") as f:
-            state = pickle.load(f)
-        max_words_page = state["max_words_page"]
-        global_word_counter.update(state["global_word_counter"])
-        print("State loaded from", STATE_FILE)
 
-load_state_file()
+def load_state_file(frontier):
+    """
+    Load the state of the crawler from a file.
+    The state includes:
+        • max_words_page
+        • global_word_counter
+        • frontier.unique_urls
+        • frontier.subdomains
+    """
+    global max_words_page
+    global global_word_counter
+
+    if not os.path.exists(STATE_FILE):
+        return
+
+    with open(STATE_FILE, "rb") as f:
+        state = pickle.load(f)
+
+    max_words_page = state.get("max_words_page", ("", 0)) 
+
+    global_word_counter.clear()
+    global_word_counter.update(state["global_word_counter"])
+
+    frontier.unique_urls = set(state["unique_urls"])
+
+    frontier.subdomains = defaultdict(
+        set, {sd: set(urls) for sd, urls in state["subdomains"].items()}
+    )
+
+    print("[INFO] State loaded from", STATE_FILE)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -84,7 +116,7 @@ def scraper(url, resp):
     filtered_words = [w for w in words if w not in STOPWORDS and not w.isdigit()]
     
     # Detect and avoid dead URLs that return a 200 status but no data
-    if len(filtered_words) < 100:
+    if len(filtered_words) < 30:
         print(f"Dead or low-information page: {url}")
         return []
     
@@ -469,3 +501,16 @@ def is_near_duplicate(url, text):
         seen_shingles[url] = new_shingles
 
     return False, None, 0.0
+
+
+def is_low_information(text):
+    RE_UPDATE = re.compile(r'^update\s*-\s*\d{4}-\d{2}-\d{2}', re.I)
+    RE_SHA7   = re.compile(r'\b[a-f0-9]{7}\b', re.I)
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return True
+    tokens = re.findall(r"[A-Za-z0-9']+", text)
+    unique_ratio = len(set(tokens)) / len(tokens) if tokens else 0
+    update_ratio = sum(bool(RE_UPDATE.match(ln)) for ln in lines) / len(lines)
+    sha_density  = len(RE_SHA7.findall(text)) / max(1, len(tokens))
+    return (unique_ratio < 0.05) or (update_ratio > 0.6) or (sha_density > 0.10)
