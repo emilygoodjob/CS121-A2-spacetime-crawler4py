@@ -113,3 +113,12 @@ venv.bak/
 # log file
 logs/
 crawl_stats.txt
+crawl_stats.txt
+crawl_stats.pkl
+crawl_stats.pkl
+seen_hashes.pkl
+seen_shingles.pkl
+config.ini
+config copy.ini
+test.py
+test_frontier.py
