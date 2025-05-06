@@ -65,6 +65,12 @@ class Worker(Thread):
                 self.frontier.sync()
                 continue
 
+            # if not scraper.to_crawl(tbd_url):
+            #     self.logger.info(f"Skipping trap or low information URL {tbd_url}. Marking as complete.")
+            #     self.frontier.mark_url_complete(tbd_url)
+            #     self.frontier.sync()
+            #     continue
+
             # download the URL    
             start = time.perf_counter()
             resp = download(tbd_url, self.config, self.logger)
@@ -86,6 +92,11 @@ class Worker(Thread):
             # Skip 404
             if not (200 <= resp.status < 300):
                 self.logger.warning(f"Skipping {tbd_url} due to HTTP status {resp.status}.")
+                self.frontier.mark_url_complete(tbd_url)
+                self.frontier.sync()
+                continue
+            if resp.status == None:
+                self.logger.warning(f"Skipping {tbd_url} due to timeout.")
                 self.frontier.mark_url_complete(tbd_url)
                 self.frontier.sync()
                 continue

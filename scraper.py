@@ -133,11 +133,96 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
+        if isinstance(url, (bytes, bytearray)):
+            try:
+                url = url.decode("utf-8", "ignore")
+            except UnicodeDecodeError:
+                return False
+
         parsed = urlparse(url)
         query_parts = parsed.query.lower().split('&')
         if parsed.scheme not in set(["http", "https"]):
             return False
         
+        # # Basic sanity checks
+        # if len(query_parts) > 5:
+        #     return False
+        # if len(url) > 300:
+        #     return False
+        # if parsed.path.count('/') > 10:
+        #     return False
+        # if len(parsed.query) > 200:
+        #     return False
+
+        # # Calendar & pagination traps
+        # # year/month/day traps
+        # if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
+        #     return False
+        # # year/month traps
+        # if re.search(r'\d{4}[-/]\d{2}', url): # year/month
+        #     return False
+        # pagination_patterns = ('page=', 'start=', 'offset=')
+        # if any(part.startswith(p) and re.search(r'\d+', part) for p in pagination_patterns for part in query_parts):
+        #     return False
+
+        # # Session/token traps
+        # trap_params = ('session=', 'sid=', 'token=', 'jsessionid=')
+        # if any(part.startswith(p) for p in trap_params for part in query_parts):
+        #     return False
+
+        # # Download/action traps
+        # if "action=download" in parsed.query.lower():
+        #     return False
+        # if any(part.startswith(('version=', 'do=', 'rev=')) for part in query_parts):
+        #     return False
+
+        # # Path-based traps
+        # if any(trap in parsed.path.lower() for trap in ['diff', 'media', 'history']):
+        #     return False
+
+        # # Suspicious file traps
+        # if re.search(r'\.(php|aspx|jsp)$', parsed.path.lower()):
+        #     if any(key in parsed.query.lower() for key in ('id=', 'files=')):
+        #         return False
+
+        # # Long hash (commit-like) traps
+        # if re.search(r'[a-fA-F0-9]{32,}', parsed.path) or re.search(r'[a-fA-F0-9]{32,}', parsed.query):
+        #     return False
+
+        # # GitLab-specific traps
+        # gitlab_ban_paths = (
+        #     '/forks', '/issues', '/starrers', '/merge_requests', '/pipelines',
+        #     '/jobs', '/blame', '/tags', '/branches', '/commits', '/repository',
+        #     '/import', '/activity'
+        # )
+        # if '/-/' in url:
+        #     if url.rstrip('/').endswith(gitlab_ban_paths):
+        #         return False
+        #     if parsed.path.endswith('/compare'):
+        #         return False
+        #     if re.search(r'/(commit|tree|compare)/[a-fA-F0-9]{10,}', parsed.path):
+        #         return False
+        #     if parsed.path.startswith('/-/commit') and any(p in parsed.query.lower() for p in ['view=', 'expanded=']):
+        #         return False
+
+        # # Swiki traps (index loops)
+        # if 'idx=' in parsed.query.lower():
+        #     return False
+        
+        # # Skip tel and mail links
+        # # path of tel links like (949) xxx-xxxx
+        # # path of mail links like xxx@xxx.uci.edu
+        # if parsed.scheme in ['tel', 'mailto']:
+        #     return False
+        
+        # PHONE_RE = re.compile(r'\(\d{3}\)\s?\d{3}-\d{4}')
+        # EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}')
+        # path_and_query = parsed.path + "?" + parsed.query
+        # if PHONE_RE.search(path_and_query) or EMAIL_RE.search(path_and_query):
+        #     return False
+
+        # ----
+
         # Basic sanity checks
         if len(query_parts) > 5:
             return False
@@ -150,14 +235,16 @@ def is_valid(url):
 
         # Calendar & pagination traps
         # year/month/day traps
-        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}', url):
+        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}$', parsed.path):
             return False
-        # year/month traps
-        if re.search(r'\d{4}[-/]\d{2}', url): # year/month
+        elif re.search(r'\d{4}[-/]\d{2}$', parsed.path):
             return False
         pagination_patterns = ('page=', 'start=', 'offset=')
-        if any(part.startswith(p) and re.search(r'\d+', part) for p in pagination_patterns for part in query_parts):
-            return False
+        for p in pagination_patterns:
+            m = re.search(rf'{p}(\d+)', parsed.query)
+            if m and int(m.group(1)) > 5:
+                return False
+            
 
         # Session/token traps
         trap_params = ('session=', 'sid=', 'token=', 'jsessionid=')
@@ -215,6 +302,9 @@ def is_valid(url):
         if PHONE_RE.search(path_and_query) or EMAIL_RE.search(path_and_query):
             return False
 
+
+        # ----
+
         domain = parsed.netloc.lower()
         if not (domain.endswith(".ics.uci.edu") or
                 domain.endswith(".cs.uci.edu") or
@@ -240,6 +330,107 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+def to_crawl(url):
+    """
+    Decide whether to crawl this website or not.
+    Skip the trap website.
+    """
+
+    try:
+        if isinstance(url, (bytes, bytearray)):
+            try:
+                url = url.decode("utf-8", "ignore")
+            except UnicodeDecodeError:
+                return False
+        parsed = urlparse(url)
+        query_parts = parsed.query.lower().split('&')
+
+        # Basic sanity checks
+        if len(query_parts) > 5:
+            return False
+        if len(url) > 300:
+            return False
+        if parsed.path.count('/') > 10:
+            return False
+        if len(parsed.query) > 200:
+            return False
+
+        # Calendar & pagination traps
+        # year/month/day traps
+        if re.search(r'\d{4}[-/]\d{2}[-/]\d{2}$', parsed.path):
+            return False
+        elif re.search(r'\d{4}[-/]\d{2}$', parsed.path):
+            return False
+        pagination_patterns = ('page=', 'start=', 'offset=')
+        for p in pagination_patterns:
+            m = re.search(rf'{p}(\d+)', query_lower)
+            if m and int(m.group(1)) > 5:
+                return False
+            
+
+        # Session/token traps
+        trap_params = ('session=', 'sid=', 'token=', 'jsessionid=')
+        if any(part.startswith(p) for p in trap_params for part in query_parts):
+            return False
+
+        # Download/action traps
+        if "action=download" in parsed.query.lower():
+            return False
+        if any(part.startswith(('version=', 'do=', 'rev=')) for part in query_parts):
+            return False
+
+        # Path-based traps
+        if any(trap in parsed.path.lower() for trap in ['diff', 'media', 'history']):
+            return False
+
+        # Suspicious file traps
+        if re.search(r'\.(php|aspx|jsp)$', parsed.path.lower()):
+            if any(key in parsed.query.lower() for key in ('id=', 'files=')):
+                return False
+
+        # Long hash (commit-like) traps
+        if re.search(r'[a-fA-F0-9]{32,}', parsed.path) or re.search(r'[a-fA-F0-9]{32,}', parsed.query):
+            return False
+
+        # GitLab-specific traps
+        gitlab_ban_paths = (
+            '/forks', '/issues', '/starrers', '/merge_requests', '/pipelines',
+            '/jobs', '/blame', '/tags', '/branches', '/commits', '/repository',
+            '/import', '/activity'
+        )
+        if '/-/' in url:
+            if url.rstrip('/').endswith(gitlab_ban_paths):
+                return False
+            if parsed.path.endswith('/compare'):
+                return False
+            if re.search(r'/(commit|tree|compare)/[a-fA-F0-9]{10,}', parsed.path):
+                return False
+            if parsed.path.startswith('/-/commit') and any(p in parsed.query.lower() for p in ['view=', 'expanded=']):
+                return False
+
+        # Swiki traps (index loops)
+        if 'idx=' in parsed.query.lower():
+            return False
+        
+        # Skip tel and mail links
+        # path of tel links like (949) xxx-xxxx
+        # path of mail links like xxx@xxx.uci.edu
+        if parsed.scheme in ['tel', 'mailto']:
+            return False
+        
+        PHONE_RE = re.compile(r'\(\d{3}\)\s?\d{3}-\d{4}')
+        EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}')
+        path_and_query = parsed.path + "?" + parsed.query
+        if PHONE_RE.search(path_and_query) or EMAIL_RE.search(path_and_query):
+            return False
+
+        return True
+
+    except TypeError:
+        print ("TypeError for ", parsed)
+        raise
+    
 
 # helper functions
 def extract_visible_text(resp):

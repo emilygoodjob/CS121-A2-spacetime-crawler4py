@@ -14,6 +14,10 @@ def main(config_file, restart):
     config = Config(cparser)
     # print("[Launch] Getting cache server...") 
     config.cache_server = get_cache_server(config, restart)
+    if restart:
+        os.remove(crawl_stats.pkl)
+        os.remove(seen_hashes.pkl)
+        os.remove(seen_shingles.pkl)
     # print("[Launch] Initializing crawler...")
     crawler = Crawler(config, restart)
     # print("[Launch] Starting crawler execution.")
