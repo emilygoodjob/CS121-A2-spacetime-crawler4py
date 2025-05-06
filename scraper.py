@@ -22,12 +22,24 @@ EXACT_DUP_FILE = 'seen_hashes.pkl'
 NEAR_DUP_FILE = 'seen_shingles.pkl'
 
 def load_dup_state(filepath, default):
+    """
+    Load the state of the crawler from a file.
+    The state includes:
+        • seen_hashes
+        • seen_shingles
+    """
     if os.path.exists(filepath):
         with open(filepath, 'rb') as f:
             return pickle.load(f)
     return default
 
 def save_dup_state():
+    """
+    Save the state of the crawler to a file.
+    The state includes:
+        • seen_hashes
+        • seen_shingles
+    """
     with open(EXACT_DUP_FILE, 'wb') as f:
         pickle.dump(seen_hashes, f)
     with open(NEAR_DUP_FILE, 'wb') as f:
