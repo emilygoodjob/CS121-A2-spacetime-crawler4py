@@ -36,17 +36,23 @@ class Frontier(object):
             self.logger.info(
                 f"Did not find save file {self.config.save_file}, "
                 f"starting from seed.")
-            os.remove(EXACT_DUP_FILE)
-            os.remove(NEAR_DUP_FILE)
-            os.remove(STATE_FILE)
+            if os.path.exists(EXACT_DUP_FILE):
+                os.remove(EXACT_DUP_FILE)
+            if os.path.exists(NEAR_DUP_FILE):
+                os.remove(NEAR_DUP_FILE)
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
         elif os.path.exists(self.config.save_file) and restart:
             # Save file does exists, but request to start from seed.
             self.logger.info(
                 f"Found save file {self.config.save_file}, deleting it.")
             os.remove(self.config.save_file)
-            os.remove(EXACT_DUP_FILE)
-            os.remove(NEAR_DUP_FILE)
-            os.remove(STATE_FILE)
+            if os.path.exists(EXACT_DUP_FILE):
+                os.remove(EXACT_DUP_FILE)
+            if os.path.exists(NEAR_DUP_FILE):
+                os.remove(NEAR_DUP_FILE)
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
         # Load existing save file, or create one if it does not exist.
         self.save = shelve.open(self.config.save_file)
         if restart:
