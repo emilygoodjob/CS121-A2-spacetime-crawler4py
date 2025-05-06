@@ -11,6 +11,7 @@ from scraper import is_valid, EXACT_DUP_FILE, NEAR_DUP_FILE, STATE_FILE
 #adding extra libs
 from collections import defaultdict
 from urllib.parse import urlparse, urldefrag
+import heapq
 
 class Frontier(object):
     def __init__(self, config, restart):
@@ -81,11 +82,13 @@ class Frontier(object):
         """
         Get the next URL to be downloaded from the frontier.
         """
-
+        
+        
         # make sure only one thread at a time for the thread-safe purpose
         with self.Lock:
             now = time.time()
             for i, url in enumerate(self.to_be_downloaded):
+                now = time.time()
                 # self.logger.info(f"Trying URL: {url}") 
                 domain = urlparse(url).netloc 
                 last_access = self.domain_last_access.get(domain, 0) 
@@ -112,7 +115,7 @@ class Frontier(object):
             unfrag_url, _ = urldefrag(url)
 
             urlhash = get_urlhash(unfrag_url)
-            if url in self.save:
+            if urlhash in self.save:
                 self.logger.info(f"URL already in the frontier or completed: {url}")
                 return
             
