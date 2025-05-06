@@ -181,7 +181,7 @@ class Frontier(object):
                 # This should not happen.
                 self.logger.error(
                     f"Completed url {url}, but have not seen it before.")
-            
+            self.logger.info(f"Marking URL as complete: {url}")
             self.completed += 1
             self.save[urlhash] = (url, True)
             self.save.sync()

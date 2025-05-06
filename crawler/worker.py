@@ -31,7 +31,7 @@ class Worker(Thread):
         while True:
             tbd_url, next_access_time = self.frontier.get_tbd_url()
 
-            # sleep and retry for 3 times
+            # sleep and retry for 3 times 
             if not tbd_url:
                 for _ in range(3):
                     if tbd_url:
@@ -39,15 +39,25 @@ class Worker(Thread):
                     if not tbd_url:
                         if next_access_time:
                             self.logger.info(f"Need to wait for the next access time.")
-                            time.sleep(next_access_time - time.time())
+                            if next_access_time > time.time():
+                                time.sleep(next_access_time - time.time())
                         else:
                             self.logger.info("No URLs to download. Sleeping for some time.")
                             time.sleep(retry_delay)
                     tbd_url, next_access_time = self.frontier.get_tbd_url()
                     
-            if not tbd_url: # If wait for 3 times and still no url, exit
+            if not tbd_url and not next_access_time: # If wait for 3 times and still no url, exit
                 self.logger.info("No URLs to download. Exiting.")
                 break # while loop will exit
+            
+            while not tbd_url:
+                self.logger.info("Need to wait for the next access time.")
+                if next_access_time > time.time():
+                    time.sleep(next_access_time - time.time())
+                tbd_url, next_access_time = self.frontier.get_tbd_url()
+                if not tbd_url and not next_access_time:
+                    self.logger.info("No URLs to download. Exiting.")
+                    break
                         
             if not scraper.is_valid(tbd_url):
                 self.logger.info(f"Skipping invalid URL {tbd_url}. Marking as complete.")
@@ -56,8 +66,11 @@ class Worker(Thread):
                 continue
 
             # download the URL    
+            start = time.perf_counter()
             resp = download(tbd_url, self.config, self.logger)
-
+            latency = time.perf_counter() - start
+            self.logger.info(f"Latency {latency:.3f}s | {tbd_url} | status {resp.status}")
+            
             # Check if the response is valid
             if resp is None:
                 self.logger.warning(f"Failed to download {tbd_url}. Skipping.")

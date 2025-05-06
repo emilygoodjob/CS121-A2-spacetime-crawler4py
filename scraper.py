@@ -205,12 +205,12 @@ def is_valid(url):
         
         # Skip tel and mail links
         # path of tel links like (949) xxx-xxxx
-        # path of mail links like xxx@uci.edu
+        # path of mail links like xxx@xxx.uci.edu
         if parsed.scheme in ['tel', 'mailto']:
             return False
         
         PHONE_RE = re.compile(r'\(\d{3}\)\s?\d{3}-\d{4}')
-        EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@uci\.edu', re.I)
+        EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}')
         path_and_query = parsed.path + "?" + parsed.query
         if PHONE_RE.search(path_and_query) or EMAIL_RE.search(path_and_query):
             return False
